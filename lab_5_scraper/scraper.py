@@ -13,6 +13,45 @@ from bs4 import BeautifulSoup, Tag
 from core_utils.article.article import Article
 from core_utils.config_dto import ConfigDTO
 
+class IncorrectSeedURLError(Exception):
+    """Raised when seed URL does not match standard pattern 'https?://(www.)?'."""
+    pass
+
+
+class NumberOfArticlesOutOfRangeError(Exception):
+    """Raised when total number of articles is out of range from 1 to 150."""
+    pass
+
+
+class IncorrectNumberOfArticlesError(Exception):
+    """Raised when total number of articles to parse is not integer or less than 0."""
+    pass
+
+
+class IncorrectHeadersError(Exception):
+    """Raised when headers are not in a form of dictionary."""
+    pass
+
+
+class IncorrectEncodingError(Exception):
+    """Raised when encoding is not specified as a string."""
+    pass
+
+
+class IncorrectTimeoutError(Exception):
+    """Raised when timeout value is not a positive integer less than 60."""
+    pass
+
+
+class IncorrectVerifyError(Exception):
+    """Raised when verify certificate value is not boolean."""
+    pass
+
+
+class IncorrectHeadlessModeError(Exception):
+    """Raised when headless mode value is not boolean."""
+    pass
+
 
 class Config:
     """
@@ -26,6 +65,10 @@ class Config:
         Args:
             path_to_config (pathlib.Path): Path to configuration.
         """
+        self.path_to_config = path_to_config
+        self._config_dto = self._extract_config_content()
+        self._validate_config_content()
+        
 
     def _extract_config_content(self) -> ConfigDTO:
         """
