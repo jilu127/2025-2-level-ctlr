@@ -19,42 +19,58 @@ from core_utils.constants import ASSETS_PATH, CRAWLER_CONFIG_PATH
 
 
 class IncorrectSeedURLError(Exception):
-    """Raised when seed URL does not match standard pattern 'https?://(www.)?'."""
+    """
+    Raised when seed URL does not match standard pattern 'https?://(www.)?'.
+    """
     pass
 
 
 class NumberOfArticlesOutOfRangeError(Exception):
-    """Raised when total number of articles is out of range from 1 to 150."""
+    """
+    Raised when total number of articles is out of range from 1 to 150.
+    """
     pass
 
 
 class IncorrectNumberOfArticlesError(Exception):
-    """Raised when total number of articles to parse is not integer or less than 0."""
+    """
+    Raised when total number of articles to parse is not integer or less than 0.
+    """
     pass
 
 
 class IncorrectHeadersError(Exception):
-    """Raised when headers are not in a form of dictionary."""
+    """
+    Raised when headers are not in a form of dictionary.
+    """
     pass
 
 
 class IncorrectEncodingError(Exception):
-    """Raised when encoding is not specified as a string."""
+    """
+    Raised when encoding is not specified as a string.
+    """
     pass
 
 
 class IncorrectTimeoutError(Exception):
-    """Raised when timeout value is not a positive integer less than 60."""
+    """
+    Raised when timeout value is not a positive integer less than 60.
+    """
     pass
 
 
 class IncorrectVerifyError(Exception):
-    """Raised when verify certificate value is not boolean."""
+    """
+    Raised when verify certificate value is not boolean.
+    """
     pass
 
 
 class IncorrectHeadlessModeError(Exception):
-    """Raised when headless mode value is not boolean."""
+    """
+    Raised when headless mode value is not boolean.
+    """
     pass
 
 
@@ -196,7 +212,7 @@ def make_request(url: str, config: Config) -> requests.models.Response:
         timeout=config.get_timeout(),
         verify=config.get_verify_certificate()
     )
-    response.encoding = config.get_encoding()
+    response.encoding = config.get_encoding() 
     return response
 
 
@@ -243,32 +259,22 @@ class Crawler:
         Find articles.
         """
         needed_count = self.config.get_num_articles()
-        seed_urls = self.get_search_urls()
-        for seed_url in seed_urls:
+        for seed in self.get_search_urls():
             if len(self.urls) >= needed_count:
                 return
-            response = make_request(seed_url, self.config)
+            response = make_request(seed, self.config)
             if not response.ok:
                 continue
             soup = BeautifulSoup(response.text, 'lxml')
-            all_links = soup.find_all('a', href=True)
-            for link in all_links:
+            for link in soup.find_all('a', href=True):
                 if len(self.urls) >= needed_count:
                     return
                 href = link.get('href')
-                if not href:
+                if not href or href in ('#', 'javascript:'):
                     continue
-                if href == '#' or href.startswith('javascript:'):
-                    continue
-                if href.startswith('/'):
-                    full_url = 'https://proza.ru' + href
-                elif href.startswith('http://') or href.startswith('https://'):
-                    full_url = href
-                else:
-                    continue
-                if full_url and full_url not in self.urls:
-                    if '/editor/' in full_url or '/texts/' in full_url:
-                        self.urls.append(full_url)
+                full = href if href.startswith(('http://', 'https://')) else 'https://proza.ru' + href
+                if full not in self.urls and re.search(r'/\d{4}/\d{2}/\d{2}/\d+', full):
+                    self.urls.append(full)
 
     def get_search_urls(self) -> list:
         """
@@ -419,19 +425,15 @@ def main() -> None:
     """
     config = Config(CRAWLER_CONFIG_PATH)
     prepare_environment(ASSETS_PATH)
-    
     crawler = Crawler(config)
     crawler.find_articles()
-    
     for i, url in enumerate(crawler.urls, 1):
         parser = HTMLParser(url, i, config)
         article = parser.parse()
         if article:
-            to_raw(article, ASSETS_PATH)
-            to_meta(article, ASSETS_PATH)
-            print(f"Сохранена статья {i}: {article.title}")
-    
-    print(f"\nГотово! Сохранено {len(crawler.urls)} статей")
+            to_raw(article)
+            to_meta(article)
+    print(f"\nFinished! Saved {len(crawler.urls)} articles")
 
 if __name__ == "__main__":
     main()

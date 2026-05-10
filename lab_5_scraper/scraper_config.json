@@ -1,13 +1,18 @@
 {
-    "seed_urls": [ "https://proza.ru/texts/list.html?topic=all&type=selected&year=2026&month=04&day=1"],
+    "seed_urls": [
+        "https://proza.ru/texts/list.html?topic=all&type=selected&year=2026&month=04&day=1",
+        "https://proza.ru/texts/list.html?day=1&month=04&year=2026&topic=all&type=selected&start=213",
+        "https://proza.ru/texts/list.html?day=1&month=04&year=2026&topic=all&type=selected&start=183",
+        "https://proza.ru/texts/list.html?day=1&month=04&year=2026&topic=all&type=selected&start=153"
+    ],
     "headers": {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 YaBrowser/26.3.0.0 Safari/537.36",
         "Cookie": "_ym_uid=1727437131819766125; cookies_policy=true; _ym_d=1777573678; _ym_visorc=b; _ym_isad=2",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
         "Accept language": "ru,en;q=0.9"
     },
-    "total_articles_to_find_and_parse": 30,
-    "encoding": "utf-8",
+    "total_articles_to_find_and_parse": 100,
+    "encoding": "windows-1251",
     "timeout": 10,
     "should_verify_certificate": true,
     "headless_mode": true
