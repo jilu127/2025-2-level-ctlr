@@ -342,6 +342,10 @@ def main() -> None:
     """
     Entrypoint for pipeline module.
     """
+    corpus_manager = CorpusManager(ASSETS_PATH)
+    analyzer = UDPipeAnalyzer()
+    pipeline = TextProcessingPipeline(corpus_manager, analyzer)
+    pipeline.run()
 
 
 if __name__ == "__main__":
