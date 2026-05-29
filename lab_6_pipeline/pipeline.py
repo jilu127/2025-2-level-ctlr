@@ -10,7 +10,7 @@ import spacy_udpipe
 
 from core_utils.article.article import Article, ArtifactType
 from core_utils.article.io import to_cleaned
-from core_utils.constants import ASSETS_PATH
+from core_utils.constants import ASSETS_PATH, PROJECT_ROOT
 from core_utils.pipeline import LibraryWrapper, PipelineProtocol, TreeNode
 
 try:
@@ -149,9 +149,8 @@ class TextProcessingPipeline(PipelineProtocol):
             to_cleaned(article)
             if self._analyzer is not None:
                 conllu_results = self._analyzer.analyze([raw_text])
-                if conllu_results:
-                    article.set_conllu_info(conllu_results[0])
-                    self._analyzer.to_conllu(article)
+                article.set_conllu_info(conllu_results[0])
+                self._analyzer.to_conllu(article)
 
 
 class UDPipeAnalyzer(LibraryWrapper):
@@ -175,11 +174,35 @@ class UDPipeAnalyzer(LibraryWrapper):
         Returns:
             Language: Analyzer instance
         """
-        model_path = pathlib.Path(__file__).parent / "assets" / "model" / "russian-syntagrus-ud-2.0-170801.udpipe"
-        if not model_path.exists():
-            raise FileNotFoundError()
-        nlp = spacy_udpipe.load_from_path(lang="ru", path=str(model_path))
-        return nlp
+        model_path = str(
+            PROJECT_ROOT
+            / "lab_6_pipeline"
+            / "assets"
+            / "model"
+            / "russian-syntagrus-ud-2.0-170801.udpipe"
+        )
+        model = spacy_udpipe.load_from_path(lang='ru', path=model_path)
+        model.add_pipe(
+            'conll_formatter',
+            last=True,
+            config={
+                'conversion_maps': {'XPOS': {'': '_'}},
+                'include_headers': True,
+                'field_names': {
+                    'ID': 'ID',
+                    'FORM': 'FORM',
+                    'LEMMA': 'LEMMA',
+                    'UPOS': 'UPOS',
+                    'XPOS': 'XPOS',
+                    'FEATS': 'FEATS',
+                    'HEAD': 'HEAD',
+                    'DEPREL': 'DEPREL',
+                    'DEPS': 'DEPS',
+                    'MISC': 'MISC'
+                }
+            }
+        )
+        return model
 
 
     def analyze(self, texts: list[str]) -> list[str]:
@@ -195,37 +218,7 @@ class UDPipeAnalyzer(LibraryWrapper):
         results = []
         for text in texts:
             doc = self._analyzer(text)
-            conllu_lines = []
-            conllu_lines.append("# sent_id = 1")
-            conllu_lines.append(f"# text = {text}")
-            for i, token in enumerate(doc, 1):
-                feats = str(token.morph) if str(token.morph) else "_"
-                lemma = token.lemma_ if token.lemma_ else "_"
-                if token.dep_ == "ROOT":
-                    head = "0"
-                else:
-                    head = str(token.head.i + 1)
-                misc = ""
-                if not token.whitespace_:
-                    misc = "SpaceAfter=No"
-                else:
-                    misc = "_"
-                row = [
-                    str(i),
-                    token.text,
-                    lemma,
-                    token.pos_,
-                    "_",
-                    feats,
-                    head,
-                    token.dep_,
-                    "_",
-                    misc
-                ]
-                conllu_lines.append("\t".join(row))
-            conllu_lines.append("")
-            conllu_lines.append("")
-            results.append("\n".join(conllu_lines))
+            results.append(doc._.conll_str)
         return results
 
     def to_conllu(self, article: Article) -> None:
@@ -242,6 +235,7 @@ class UDPipeAnalyzer(LibraryWrapper):
         file_path.parent.mkdir(parents=True, exist_ok=True)
         with open(file_path, "w", encoding="utf-8") as f:
             f.write(conllu_info)
+            f.write("\n")
 
     def from_conllu(self, article: Article) -> Doc:
         """
